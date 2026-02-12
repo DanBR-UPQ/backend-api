@@ -5,21 +5,33 @@ const poblarProductos = async (request, response) => {
         // Fetch FakeStoreApi
         const apiFetch = await fetch('http://fakestoreapi.com/products');
         const products = await apiFetch.json();
+        // console.log(products)
 
         let inserciones = 0;
+
+        const categoriasDB = await pool.query('SELECT id, nombre FROM categorias');
+
+        const categoriasDict = {}
+        for (const cat of categoriasDB.rows) {
+        categoriasDict[cat.nombre] = cat.id
+        }
+
+
         // Destructurar el objeto
         for(const product of products){
-            const { title, price, description, image} = product;
+            const { title, price, description, image, category} = product;
 
             const stock = Math.floor(Math.random() * 50) + 1;
 
+            const id_categoria = categoriasDict[category];
+
             const query = `
                 INSERT INTO productos
-                (nombre, precio, stock, descripcion, imagen_url)
-                VALUES ($1, $2, $3, $4, $5)
+                (nombre, precio, stock, descripcion, imagen_url, id_categoria)
+                VALUES ($1, $2, $3, $4, $5, $6)
             `
 
-            await pool.query(query, [title, price, stock, description, image]);
+            await pool.query(query, [title, price, stock, description, image, id_categoria]);
 
             inserciones++;
         }
@@ -35,4 +47,80 @@ const poblarProductos = async (request, response) => {
     }
 };
 
-module.exports = { poblarProductos };
+
+const poblarCategorias = async (req, res) => {
+    try {
+        const apiFetch = await fetch('http://fakestoreapi.com/products');
+        const categorias = await apiFetch.json();
+        let inserciones = 0;
+
+        for(const categoria of categorias){
+            const {category} = categoria
+
+            const {rows} = await pool.query('SELECT * FROM categorias WHERE nombre = $1', [category])
+
+            if (rows.length === 0) {
+                await pool.query('INSERT INTO categorias (nombre) VALUES ($1)', [category])
+                inserciones++
+            }
+        }
+        res.status(200).json(
+            {
+                mensaje: "Carga masiva exitosa", 
+                cantidad: inserciones
+            }
+        );
+
+
+    } catch(error){
+        console.log(`Error: ${error}`);
+        res.status(500).json({error: error.message})
+    }
+}
+
+
+const buscarProducto = async (req,res) => {
+    try {
+        let results = []
+        const busqueda = req.params.busqueda
+
+        const {rows} = await pool.query('SELECT nombre FROM productos')
+
+        for (const producto of rows){
+            if (producto.nombre.includes(busqueda)){
+                results.push(producto.nombre)
+            }
+        }
+
+        res.status(200).json({resultados: results})
+    } catch (error){
+        console.log(error)
+        res.status(500).json({error: error})
+    }
+}
+
+
+const buscarCategoria = async (req,res) => {
+    try {
+        let results = []
+        const busqueda = req.params.busqueda
+
+        const {rows} = await pool.query('SELECT nombre FROM categorias')
+
+        for (const producto of rows){
+            if (producto.nombre.includes(busqueda)){
+                results.push(producto.nombre)
+            }
+        }
+
+        res.status(200).json({resultados: results})
+    } catch (error){
+        console.log(error)
+        res.status(500).json({error: error})
+    }
+}
+
+
+
+
+module.exports = { poblarProductos, poblarCategorias, buscarProducto, buscarCategoria };
