@@ -81,23 +81,29 @@ const poblarCategorias = async (req, res) => {
 
 const buscarProducto = async (req,res) => {
     try {
-        let results = []
         const busqueda = req.params.busqueda
 
-        const {rows} = await pool.query('SELECT nombre FROM productos')
+        const {rows} = await pool.query(`
+            SELECT 
+                p.nombre, 
+                p.descripcion, 
+                c.nombre AS categoria, 
+                p.precio, 
+                p.stock
+            FROM productos p
+            JOIN categorias c ON p.id_categoria = c.id
+            WHERE p.nombre ILIKE $1 OR p.descripcion ILIKE $1
+        `,
+        [`%${busqueda}%`]
+        )
 
-        for (const producto of rows){
-            if (producto.nombre.includes(busqueda)){
-                results.push(producto.nombre)
-            }
-        }
-
-        res.status(200).json({resultados: results})
+        res.status(200).json(rows)
     } catch (error){
         console.log(error)
         res.status(500).json({error: error})
     }
 }
+
 
 
 const buscarCategoria = async (req,res) => {
@@ -105,12 +111,13 @@ const buscarCategoria = async (req,res) => {
         let results = []
         const busqueda = req.params.busqueda
 
-        const {rows} = await pool.query('SELECT nombre FROM categorias')
+        const {rows} = await pool.query(
+            'SELECT nombre FROM categorias WHERE nombre ILIKE $1',
+            [`%${busqueda}%`]
+        )
 
         for (const producto of rows){
-            if (producto.nombre.includes(busqueda)){
-                results.push(producto.nombre)
-            }
+            results.push(producto.nombre)
         }
 
         res.status(200).json({resultados: results})
@@ -120,7 +127,20 @@ const buscarCategoria = async (req,res) => {
     }
 }
 
+const verProductos = async (req,res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT p.nombre, p.descripcion, c.nombre AS categoria, p.precio, p.stock
+            FROM productos p
+            JOIN categorias c ON p.id_categoria = c.id
+        `)
+
+        res.status(200).json(rows);
+    } catch (error){
+        console.log(error)
+        res.status(500).json({error: error})
+    }
+}
 
 
-
-module.exports = { poblarProductos, poblarCategorias, buscarProducto, buscarCategoria };
+module.exports = { poblarProductos, poblarCategorias, buscarProducto, buscarCategoria, verProductos };
