@@ -1,6 +1,8 @@
 const pool = require('../config/db')
 const bcrypt = require('bcryptjs')
 
+const jwt = require('jsonwebtoken')
+
 const register = async (req, res) => {
     const { email, password} = req.body
 
@@ -31,4 +33,48 @@ const register = async (req, res) => {
     }
 }
 
-module.exports = {register}
+
+const login = async (req, res) => {
+    const { email, password } = req.body
+    console.log(req.body)
+
+    try {
+
+        const result = await pool.query('SELECT * FROm usuarios WHERE email = $1', [email])
+
+        if (result.rows.length === 0){
+            return res.status(400).json({msg: "Credenciales inválidas (email)"})
+        }
+
+        const usuario = result.rows[0]
+
+        const isMatch = await bcrypt.compare(password, usuario.password)
+
+        if (!isMatch){
+            return res.status(400).json({msg: "Credenciales inválidas (password)"})
+        }
+
+        const payload = {
+            id: usuario.id,
+            rol: usuario.rol,
+            email: usuario.email
+        }
+
+        const token = jwt.sign(
+            payload,
+            process.env.JWT_SECRET,
+            { expiresIn: '1h'}
+        )
+
+        res.json({
+            msg: "Bienvenido",
+            token: token
+        })
+
+    }catch (e){
+        console.log(e)
+        res.status(500).json({error: "Error en el servidor"})
+    }
+}
+
+module.exports = {register, login}
