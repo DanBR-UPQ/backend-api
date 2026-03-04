@@ -1,5 +1,34 @@
 const pool = require('../config/db');
 
+
+
+const crearProducto = async (req, res) => {
+    const { nombre, precio, stock, descripcion, imagen_url, id_categoria} = req.body
+
+    try {
+
+        if (!nombre || !precio || !id_categoria) {
+            res.status(400).json({msg: "El nombre, precio y categoría son obligatorios"})
+        }
+
+
+        await pool.query(`
+                INSERT INTO productos
+                (nombre, precio, stock, descripcion, imagen_url, id_categoria)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            `, [nombre, precio, stock || 0, descripcion || '', imagen_url || '', id_categoria])
+
+            
+        res.status(201).json[{msg: "Producto subido exitosamente"}]
+
+    } catch (e) {
+        console.log(e)
+        res.status(400).json({err: e})
+    }
+
+}
+
+
 const poblarProductos = async (request, response) => {
     try {
         // Fetch FakeStoreApi
@@ -143,4 +172,4 @@ const verProductos = async (req,res) => {
 }
 
 
-module.exports = { poblarProductos, poblarCategorias, buscarProducto, buscarCategoria, verProductos };
+module.exports = { poblarProductos, poblarCategorias, buscarProducto, buscarCategoria, verProductos, crearProducto };
