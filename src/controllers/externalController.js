@@ -3,7 +3,7 @@ const pool = require('../config/db');
 
 
 const crearProducto = async (req, res) => {
-    const { nombre, precio, stock, descripcion, imagen_url, id_categoria} = req.body
+    const { nombre, precio, stock, descripcion, imagen_url, id_categoria, youtube_id} = req.body
 
     try {
 
@@ -14,9 +14,9 @@ const crearProducto = async (req, res) => {
 
         await pool.query(`
                 INSERT INTO productos
-                (nombre, precio, stock, descripcion, imagen_url, id_categoria)
-                VALUES ($1, $2, $3, $4, $5, $6)
-            `, [nombre, precio, stock || 0, descripcion || '', imagen_url || '', id_categoria])
+                (nombre, precio, stock, descripcion, imagen_url, id_categoria, youtube_id)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `, [nombre, precio, stock || 0, descripcion || '', imagen_url || '', id_categoria, youtube_id || null])
 
             
         res.status(201).json[{msg: "Producto subido exitosamente"}]

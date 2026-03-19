@@ -17,7 +17,7 @@ const register = async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt)
 
         const newUser = await pool.query(
-            'INSERT INTO usuarios (email,password) VALUES ($1, $2)',
+            'INSERT INTO usuarios (email,password) VALUES ($1, $2) RETURNING *',
             [email, passwordHash]
         )
 
